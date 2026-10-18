@@ -5,8 +5,27 @@ import io
 from deep_translator import GoogleTranslator
 import time
 import concurrent.futures
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Traductor Profesional IA", page_icon="🌐")
+
+# Registro del Service Worker para la PWA
+components.html("""
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('Service Worker registrado con éxito:', registration.scope);
+        })
+        .catch(error => {
+          console.log('Falló el registro del Service Worker:', error);
+        });
+    });
+  }
+</script>
+""", height=0)
+
 st.title("🌐 Traductor de Documentos (Word & PDF)")
 
 idiomas = {"Español": "es", "Inglés": "en", "Francés": "fr", "Alemán": "de", "Italiano": "it"}
@@ -173,5 +192,41 @@ if archivo is not None:
                 
             st.success("¡Traducción completa!")
             st.download_button("⬇️ Descargar archivo traducido (.docx)", memoria, "Traduccion.docx")
+            
+            # Botón y lógica JavaScript para las Notificaciones Push (Práctica 2.1)
+            components.html("""
+            <div style="text-align: left; font-family: sans-serif; padding: 5px 0;">
+              <button onclick="solicitarNotificacion()" style="background-color: #ff4b4b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                🔔 Activar Notificación Push de Prueba
+              </button>
+            </div>
+            
+            <script>
+              function solicitarNotificacion() {
+                if (!('Notification' in window)) {
+                  alert("Este navegador no soporta notificaciones.");
+                  return;
+                }
+
+                Notification.requestPermission().then(permission => {
+                  if (permission === 'granted') {
+                    alert('¡Permiso de notificación concedido!');
+                    
+                    if ('serviceWorker' in navigator) {
+                      navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification("¡Traductor PWA!", {
+                          body: "Tu archivo ha sido traducido con éxito en segundo plano.",
+                          icon: "/icons/icon-192.png"
+                        });
+                      });
+                    }
+                  } else {
+                    alert('Permiso de notificación denegado por el usuario.');
+                  }
+                });
+              }
+            </script>
+            """, height=60)
+
         except Exception as e:
             st.error(f"Ocurrió un error durante la traducción: {e}")
